@@ -66,12 +66,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-✅ **Next step:**  
 
-1. Save this content as `README.md` in your project root.  
-2. Commit and push it:
 
-```bash
-git add README.md
-git commit -m "Add project README with MIT License"
-git push# NLUBOTTRAINER
