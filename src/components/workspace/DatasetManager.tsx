@@ -1,0 +1,341 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, Download, FileText, Loader2, AlertCircle, FileJson, FileCode } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
+
+interface DatasetManagerProps {
+  workspaceId: string;
+}
+
+export default function DatasetManager({ workspaceId }: DatasetManagerProps) {
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [datasets, setDatasets] = useState<any[]>([]);
+  const [selectedDataset, setSelectedDataset] = useState<any>(null);
+  const [preview, setPreview] = useState<any[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchDatasets();
+  }, [workspaceId]);
+
+  const fetchDatasets = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/datasets?workspaceId=${workspaceId}`, {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDatasets(data);
+        if (data.length > 0 && !selectedDataset) {
+          setSelectedDataset(data[0]);
+          if (data[0].columnsJson) {
+            setColumns(Array.isArray(data[0].columnsJson) ? data[0].columnsJson : JSON.parse(data[0].columnsJson));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch datasets:", error);
+      toast.error("Failed to load datasets");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!['csv', 'json', 'yml', 'yaml'].includes(fileExtension || '')) {
+      toast.error("Please upload a CSV, JSON, or YML file");
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("workspaceId", workspaceId);
+
+    try {
+      const response = await fetch("/api/datasets/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedDataset(data.dataset);
+        setPreview(data.preview);
+        setColumns(data.columns);
+        await fetchDatasets();
+        toast.success(`${data.fileFormat.toUpperCase()} file uploaded successfully!`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!selectedDataset) return;
+    window.open(`/api/datasets/${selectedDataset.id}/download`, "_blank");
+  };
+
+  const getFileIcon = (format: string) => {
+    switch (format) {
+      case 'json':
+        return <FileJson className="w-4 h-4 text-blue-500" />;
+      case 'yml':
+      case 'yaml':
+        return <FileCode className="w-4 h-4 text-purple-500" />;
+      default:
+        return <FileText className="w-4 h-4 text-green-500" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 relative">
+      {/* Hero Background Section */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div 
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage: `url('https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/project-uploads/b684e359-c557-4912-a860-690f2785ae8e/generated_images/abstract-minimalist-data-visualization-b-7554a8bd-20251113171102.jpg')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+        <div className="relative bg-gradient-to-br from-blue-500/10 to-purple-500/10 p-8 border-2 border-border">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Dataset Management
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Upload and manage your datasets in CSV, JSON, or YML format for ML training
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Upload Section */}
+      <Card className="p-6 border-2">
+        <div className="space-y-4">
+          <div>
+            <Label className="text-base font-semibold">Upload Dataset</Label>
+            <div className="mt-3 flex gap-4 items-center">
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.json,.yml,.yaml"
+                onChange={handleFileUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload File
+                  </>
+                )}
+              </Button>
+              {selectedDataset && (
+                <Button variant="outline" size="lg" onClick={handleDownload}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-muted/50 p-5 rounded-xl border-2 border-border">
+            <div className="flex gap-3 text-sm text-muted-foreground">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-primary" />
+              <div>
+                <p className="font-semibold text-foreground mb-2">Supported Formats:</p>
+                <ul className="list-disc list-inside space-y-1.5">
+                  <li><strong className="text-foreground">CSV</strong> - Comma-separated values with headers</li>
+                  <li><strong className="text-foreground">JSON</strong> - Array of objects or single object</li>
+                  <li><strong className="text-foreground">YML/YAML</strong> - YAML structured data</li>
+                  <li>Maximum file size: 100MB</li>
+                  <li>Supports large datasets for ML training</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Dataset Selection */}
+      {datasets.length > 0 && (
+        <Card className="p-6 border-2">
+          <h3 className="text-lg font-bold mb-4">Available Datasets ({datasets.length})</h3>
+          <div className="grid gap-3">
+            {datasets.map((dataset) => (
+              <div
+                key={dataset.id}
+                onClick={() => {
+                  setSelectedDataset(dataset);
+                  if (dataset.columnsJson) {
+                    setColumns(Array.isArray(dataset.columnsJson) ? dataset.columnsJson : JSON.parse(dataset.columnsJson));
+                  }
+                }}
+                className={`p-5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-lg ${
+                  selectedDataset?.id === dataset.id
+                    ? "border-primary bg-gradient-to-r from-primary/10 to-purple-500/10 shadow-md"
+                    : "border-border hover:border-primary/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      {getFileIcon(dataset.fileFormat || 'csv')}
+                    </div>
+                    <div>
+                      <p className="font-bold text-base">{dataset.name}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {dataset.rowCount?.toLocaleString()} rows • {dataset.columnCount} columns • {dataset.fileFormat?.toUpperCase() || 'CSV'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold text-muted-foreground">
+                    {(dataset.fileSize / 1024).toFixed(2)} KB
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Dataset Info */}
+      {selectedDataset && (
+        <Card className="p-6 border-2 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
+          <h3 className="text-lg font-bold mb-4">Dataset Information</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="p-4 bg-white dark:bg-card rounded-xl border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-1">Name</p>
+              <p className="font-bold">{selectedDataset.name}</p>
+            </div>
+            <div className="p-4 bg-white dark:bg-card rounded-xl border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-1">Format</p>
+              <p className="font-bold uppercase">{selectedDataset.fileFormat || 'CSV'}</p>
+            </div>
+            <div className="p-4 bg-white dark:bg-card rounded-xl border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-1">Rows</p>
+              <p className="font-bold">{selectedDataset.rowCount?.toLocaleString()}</p>
+            </div>
+            <div className="p-4 bg-white dark:bg-card rounded-xl border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-1">Columns</p>
+              <p className="font-bold">{selectedDataset.columnCount}</p>
+            </div>
+            <div className="p-4 bg-white dark:bg-card rounded-xl border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-1">Size</p>
+              <p className="font-bold">{(selectedDataset.fileSize / 1024).toFixed(2)} KB</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Column List */}
+      {columns.length > 0 && (
+        <Card className="p-6 border-2">
+          <h3 className="text-lg font-bold mb-4">Columns ({columns.length})</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {columns.map((col, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-3 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-xl border-2 border-border">
+                <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                <span className="text-sm font-semibold truncate">{col}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Data Preview */}
+      {preview.length > 0 && selectedDataset?.fileFormat !== 'yml' && (
+        <Card className="p-6 border-2">
+          <h3 className="text-lg font-bold mb-4">Data Preview (First 10 rows)</h3>
+          <ScrollArea className="h-[400px] w-full rounded-xl border-2">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  {columns.map((col, idx) => (
+                    <TableHead key={idx} className="font-bold">
+                      {col}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.map((row, rowIdx) => (
+                  <TableRow key={rowIdx}>
+                    {columns.map((col, colIdx) => (
+                      <TableCell key={colIdx}>{row[col]}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </Card>
+      )}
+
+      {!selectedDataset && !uploading && datasets.length === 0 && (
+        <Card className="p-12 text-center border-2">
+          <FileText className="w-20 h-20 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-2xl font-bold mb-2">No dataset uploaded</h3>
+          <p className="text-muted-foreground mb-6 text-lg">
+            Upload a CSV, JSON, or YML file to get started with ML training
+          </p>
+          <Button 
+            onClick={() => fileInputRef.current?.click()}
+            size="lg"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Your First Dataset
+          </Button>
+        </Card>
+      )}
+    </div>
+  );
+}
