@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { user } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/jwt';
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const existingUser = await db.select().from(user).where(eq(user.email, email)).limit(1);
     
     if (existingUser.length > 0) {
       return NextResponse.json(
@@ -32,12 +32,14 @@ export async function POST(request: NextRequest) {
 
     // Create user
     const now = new Date().toISOString();
-    const [newUser] = await db.insert(users).values({
+    const [newUser] = await db.insert(user).values({
+      id: crypto.randomUUID(),
+      name: fullName || "User",
       email,
-      passwordHash,
-      fullName: fullName || null,
-      createdAt: now,
-      updatedAt: now,
+      emailVerified: false,
+      image: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }).returning();
 
     // Generate JWT token
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: newUser.id,
         email: newUser.email,
-        fullName: newUser.fullName,
+        name: newUser.name,
       },
     });
 

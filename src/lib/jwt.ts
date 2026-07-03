@@ -4,7 +4,7 @@ const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 );
 
-export async function signToken(payload: { userId: number; email: string }) {
+export async function signToken(payload: { userId: string; email: string }) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
