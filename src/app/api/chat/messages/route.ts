@@ -147,13 +147,15 @@ export async function POST(request: NextRequest) {
     // Insert message into database
     const newMessage = await db
       .insert(chatMessages)
-      .values(messageData)
+      .values(messageData as any)
       .returning();
 
     // Convert isUser back to boolean for response
+    const row = newMessage[0] as any;
+
     const responseMessage = {
-      ...newMessage[0],
-      isUser: newMessage[0].isUser === 1,
+     ...row,
+     isUser: row.isUser === 1,
     };
 
     return NextResponse.json(responseMessage, { status: 201 });
