@@ -1,22 +1,35 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { user, account } from '@/db/schema';
+import bcrypt from 'bcryptjs';
 
 async function main() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const sampleUsers = [
-        {
-            email: 'demo@nluapp.com',
-            passwordHash: '$2b$10$abcdefghijklmnopqrstuvwxyz123456',
-            fullName: 'Demo User',
-            createdAt: thirtyDaysAgo.toISOString(),
-            updatedAt: thirtyDaysAgo.toISOString(),
-        }
-    ];
+    const userId = "demo-user-id";
+    const passwordHash = await bcrypt.hash('password123', 10);
 
-    await db.insert(users).values(sampleUsers);
-    
+    // Insert user
+    await db.insert(user).values({
+        id: userId,
+        name: 'Demo User',
+        email: 'demo@nluapp.com',
+        emailVerified: true,
+        createdAt: thirtyDaysAgo,
+        updatedAt: thirtyDaysAgo,
+    }).onConflictDoNothing();
+
+    // Insert credential account
+    await db.insert(account).values({
+        id: "demo-account-id",
+        accountId: 'demo@nluapp.com',
+        providerId: 'credential',
+        userId: userId,
+        password: passwordHash,
+        createdAt: thirtyDaysAgo,
+        updatedAt: thirtyDaysAgo,
+    }).onConflictDoNothing();
+
     console.log('✅ Users seeder completed successfully');
 }
 

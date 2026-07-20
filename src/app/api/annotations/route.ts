@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     
     // Build query
-    let query = db.select().from(annotations);
+    let query: any = db.select().from(annotations);
     
     if (search) {
       const searchCondition = or(
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
       createdAt: string;
       updatedAt: string;
     } = {
-      nluModelId: parsedNluModelId,
+      nluModelId: parsedNluModelId as any,
       text: text.trim(),
       intent: intent.trim(),
       entitiesJson: entities || null,

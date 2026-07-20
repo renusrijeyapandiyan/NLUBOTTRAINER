@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const [nluModel] = await db.insert(nluModels).values({
       workspaceId: parseInt(workspaceId),
-      modelName: modelName || `NLU Model - ${new Date().toLocaleString()}`,
-      modelPath,
+      name: modelName || `NLU Model - ${new Date().toLocaleString()}`,
+      rasaModelPath: modelPath,
       accuracy: Math.random() * 0.15 + 0.80,
       trainedAt: now,
       updatedAt: now,

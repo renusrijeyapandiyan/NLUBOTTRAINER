@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { user, account } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/jwt';
 
@@ -18,9 +18,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user
-    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const [foundUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
     
-    if (!user) {
+    if (!foundUser) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+    
+    // Find account credentials
+    const [userAccount] = await db
+      .select()
+      .from(account)
+      .where(
+        and(
+          eq(account.userId, foundUser.id),
+          eq(account.providerId, 'credential')
+        )
+      )
+      .limit(1);
+
+    if (!userAccount || !userAccount.password) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -28,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    const isValidPassword = await bcrypt.compare(password, userAccount.password);
     
     if (!isValidPassword) {
       return NextResponse.json(
@@ -39,17 +58,17 @@ export async function POST(request: NextRequest) {
 
     // Generate JWT token
     const token = await signToken({
-      userId: user.id,
-      email: user.email,
+      userId: foundUser.id,
+      email: foundUser.email,
     });
 
     // Set cookie
     const response = NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
+        id: foundUser.id,
+        email: foundUser.email,
+        fullName: foundUser.name,
       },
     });
 
