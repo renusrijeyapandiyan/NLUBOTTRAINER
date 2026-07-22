@@ -3,8 +3,8 @@ import { createClient } from '@libsql/client';
 import * as schema from '@/db/schema';
 
 const client = createClient({
-  url: process.env.TURSO_CONNECTION_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
+  url: process.env.TURSO_CONNECTION_URL || 'libsql://dummy-at-buildtime.turso.io',
+  authToken: process.env.TURSO_AUTH_TOKEN || '',
   syncInterval: 60,
   fetch: (input: RequestInfo | URL, init?: RequestInit) => {
     const controller = new AbortController();
