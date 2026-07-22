@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { user } from '@/db/schema';
+import { user, account } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/jwt';
@@ -41,6 +41,17 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning();
+
+    // Create credential account
+    await db.insert(account).values({
+      id: crypto.randomUUID(),
+      accountId: email,
+      providerId: 'credential',
+      userId: newUser.id,
+      password: passwordHash,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     // Generate JWT token
     const token = await signToken({
