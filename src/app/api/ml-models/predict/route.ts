@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try Python ML service first
-    const pythonServiceUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+    const pythonServiceUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
     let predictions;
     let usePythonBackend = false;
 

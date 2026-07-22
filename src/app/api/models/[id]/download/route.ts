@@ -3,9 +3,10 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authUser = await getAuthUser();
     
     if (!authUser) {
@@ -19,12 +20,12 @@ export async function GET(
     const format = searchParams.get('format') || 'pickle';
 
     // In production, this would serve the actual model file
-    const mockModelData = `Model ID: ${params.id}\nFormat: ${format}\nTrained by: User ${authUser.userId}`;
+    const mockModelData = `Model ID: ${id}\nFormat: ${format}\nTrained by: User ${authUser.userId}`;
 
     return new NextResponse(mockModelData, {
       headers: {
         'Content-Type': 'application/octet-stream',
-        'Content-Disposition': `attachment; filename=model_${params.id}.${format}`,
+        'Content-Disposition': `attachment; filename=model_${id}.${format}`,
       },
     });
   } catch (error) {

@@ -6,9 +6,10 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authUser = await getAuthUser();
     
     if (!authUser) {
@@ -33,7 +34,7 @@ export async function POST(
         trainedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(mlModels.id, parseInt(params.id)));
+      .where(eq(mlModels.id, parseInt(id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {

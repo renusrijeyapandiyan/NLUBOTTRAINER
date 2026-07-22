@@ -6,9 +6,10 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authUser = await getAuthUser();
     
     if (!authUser) {
@@ -20,7 +21,7 @@ export async function GET(
 
     const workspaceNluModels = await db.select()
       .from(nluModels)
-      .where(eq(nluModels.workspaceId, parseInt(params.id)))
+      .where(eq(nluModels.workspaceId, parseInt(id)))
       .orderBy(nluModels.trainedAt);
 
     return NextResponse.json(workspaceNluModels);

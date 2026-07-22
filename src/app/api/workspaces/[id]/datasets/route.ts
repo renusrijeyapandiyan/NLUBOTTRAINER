@@ -6,9 +6,10 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authUser = await getAuthUser();
     
     if (!authUser) {
@@ -20,7 +21,7 @@ export async function GET(
 
     const workspaceDatasets = await db.select()
       .from(datasets)
-      .where(eq(datasets.workspaceId, parseInt(params.id)));
+      .where(eq(datasets.workspaceId, parseInt(id)));
 
     return NextResponse.json(workspaceDatasets);
   } catch (error) {

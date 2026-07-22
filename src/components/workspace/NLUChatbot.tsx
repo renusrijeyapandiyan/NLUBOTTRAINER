@@ -100,6 +100,7 @@ export default function NLUChatbot({ workspaceId }: NLUChatbotProps) {
   const [sending, setSending] = useState(false);
   const [backendStatus, setBackendStatus] = useState<any>(null);
   const [isDemoMode, setIsDemoMode] = useState(true);
+  const [hasAnyModels, setHasAnyModels] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -132,10 +133,25 @@ export default function NLUChatbot({ workspaceId }: NLUChatbotProps) {
       });
       if (response.ok) {
         const data = await response.json();
-        setModels(data);
+        setHasAnyModels(data.length > 0);
+        
+        // Filter: Only include NLU models trained on a "text" column
+        const textModels = data.filter((m: any) => {
+          try {
+            const features = Array.isArray(m.featureColumnsJson)
+              ? m.featureColumnsJson
+              : JSON.parse(m.featureColumnsJson || "[]");
+            return features.includes("text");
+          } catch (e) {
+            return false;
+          }
+        });
+
+        setModels(textModels);
+        
         // Auto-select the model with highest accuracy
-        if (data.length > 0) {
-          const bestModel = data.reduce((prev: MLModel, current: MLModel) => 
+        if (textModels.length > 0) {
+          const bestModel = textModels.reduce((prev: MLModel, current: MLModel) => 
             (current.accuracy > prev.accuracy) ? current : prev
           );
           setSelectedModel(bestModel.id.toString());
@@ -303,7 +319,9 @@ export default function NLUChatbot({ workspaceId }: NLUChatbotProps) {
             <div className="mt-3 p-2 bg-yellow-500/10 rounded flex items-start gap-2 text-xs">
               <AlertCircle className="w-3 h-3 text-yellow-500 mt-0.5 flex-shrink-0" />
               <span className="text-yellow-700 dark:text-yellow-300">
-                No trained models found. Please upload a dataset and train models first (Dataset Upload → Train Models).
+                {hasAnyModels 
+                  ? "Your trained models are tabular (like student performance) and not text-based NLU models. Tabular models cannot be used in a text chatbot. Please use the 'Predict & Test' tab to test your tabular models, or train an NLU model using a dataset with a 'text' column."
+                  : "No trained models found. Please upload a dataset and train models first (Dataset Upload → Train Models)."}
               </span>
             </div>
           )}

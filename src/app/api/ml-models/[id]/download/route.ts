@@ -1,39 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { mlModels, workspaces, session } from '@/db/schema';
+import { mlModels, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-
-async function authenticateRequest(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.substring(7);
-    
-    const sessionRecord = await db
-      .select()
-      .from(session)
-      .where(eq(session.token, token))
-      .limit(1);
-
-    if (sessionRecord.length === 0) {
-      return null;
-    }
-
-    const userSession = sessionRecord[0];
-    
-    if (new Date(userSession.expiresAt) < new Date()) {
-      return null;
-    }
-
-    return userSession.userId;
-  } catch (error) {
-    console.error('Authentication error:', error);
-    return null;
-  }
-}
+import { getCurrentUser } from '@/lib/auth';
 
 async function verifyModelAccess(modelId: number, userId: string) {
   try {
@@ -69,7 +38,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const userId = await authenticateRequest(request);
+    const user = await getCurrentUser(request);
+    const userId = user?.id;
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required', code: 'UNAUTHORIZED' },
@@ -115,7 +85,7 @@ export async function GET(
     }
 
     // Call Python backend to export model
-    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+    const pythonBackendUrl = process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8000';
     
     try {
       const exportResponse = await fetch(`${pythonBackendUrl}/models/export`, {

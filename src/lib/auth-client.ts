@@ -61,5 +61,5 @@ export function useSession(): SessionData {
     fetchSession();
   }, []);
 
-  return { data: session, isPending, error, refetch: refetch as any };
+  return { data: session, isPending, error, refetch: refetch as any, isRefetching: false };
 }

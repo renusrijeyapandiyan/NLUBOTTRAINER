@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       algorithm: result.algorithm,
       modelPath: result.model_path,
       model_path: result.model_path,
-      accuracy: result.metrics?.accuracy || result.metrics?.silhouette_score || 0,
+      accuracy: result.metrics?.accuracy || result.metrics?.r2_score || result.metrics?.silhouette_score || 0,
       precision: result.metrics?.precision,
       recall: result.metrics?.recall,
       f1Score: result.metrics?.f1_score,

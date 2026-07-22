@@ -1,0 +1,14 @@
+scikit-learn
+pandas
+numpy
+xgboost
+matplotlib
+seaborn
+joblib
+fastapi
+uvicorn[standard]
+python-multipart
+pyyaml
+python-dotenv
+pydantic
+httpx

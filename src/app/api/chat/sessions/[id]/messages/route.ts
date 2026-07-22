@@ -5,9 +5,12 @@ import { eq, and, asc } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    const sessionId = id;
+
     // Extract and validate Bearer token
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -45,8 +48,6 @@ export async function GET(
 
     const userId = userSession.userId;
 
-    // Validate chat session ID
-    const sessionId = params.id;
     if (!sessionId || isNaN(parseInt(sessionId))) {
       return NextResponse.json(
         { error: 'Valid session ID is required', code: 'INVALID_SESSION_ID' },

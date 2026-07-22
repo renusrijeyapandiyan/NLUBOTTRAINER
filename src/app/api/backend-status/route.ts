@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
 const RASA_SERVICE_URL = process.env.RASA_SERVICE_URL || 'http://localhost:8001';
 const RASA_SERVER_URL = process.env.RASA_SERVER_URL || 'http://localhost:5005';
 

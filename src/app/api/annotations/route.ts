@@ -239,15 +239,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Prepare annotation data
-    const annotationData: {
-      nluModelId: number | null;
-      text: string;
-      intent: string | null;
-      entitiesJson: any;
-      createdAt: string;
-      updatedAt: string;
-    } = {
-      nluModelId: parsedNluModelId as any,
+    const annotationData = {
+      nluModelId: parsedNluModelId as number,
       text: text.trim(),
       intent: intent.trim(),
       entitiesJson: entities || null,

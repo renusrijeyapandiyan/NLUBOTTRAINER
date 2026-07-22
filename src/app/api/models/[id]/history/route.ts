@@ -6,9 +6,10 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const authUser = await getAuthUser();
     
     if (!authUser) {
@@ -20,7 +21,7 @@ export async function GET(
 
     const history = await db.select()
       .from(trainingHistory)
-      .where(eq(trainingHistory.mlModelId, parseInt(params.id)))
+      .where(eq(trainingHistory.mlModelId, parseInt(id)))
       .orderBy(trainingHistory.epochNumber);
 
     return NextResponse.json(history);
